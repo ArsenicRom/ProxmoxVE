@@ -66,6 +66,19 @@ curl -fsSL https://pkgs.tailscale.com/stable/$ID/$VER.noarmor.gpg | tee /usr/sha
 echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/$ID $VER main" >/etc/apt/sources.list.d/tailscale.list
 apt-get update &>/dev/null
 apt-get install -y tailscale &>/dev/null
+
+# Verificar el estado de Tailscale
+if systemctl is-active --quiet tailscaled; then
+    STATUS=$(tailscale status | grep -i "Connected" | awk '{print $1}')
+    if [[ -z "$STATUS" ]]; then
+        STATUS="No especificado"
+    else
+        STATUS="Conectado"
+    fi
+    echo -e "\nTailscale está corriendo.\nEstado: $STATUS\nIP de Tailscale: $(tailscale ip -4)" > /etc/motd
+else
+    echo -e "\nTailscale NO está corriendo.\nUsar: systemctl start tailscaled" > /etc/motd
+fi
 '
 TAGS=$(awk -F': ' '/^tags:/ {print $2}' /etc/pve/lxc/${CTID}.conf)
 TAGS="${TAGS:+$TAGS; }tailscale"
